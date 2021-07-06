@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <initializer_list>
+#include <vector>
 
 using namespace std;
 
@@ -201,31 +202,89 @@ public:
         free(find_n);
         return idx;
     }
-    void remove(T val)
+
+    bool remove_at(int idx)
+    {
+        Node* rem = node_at_idx(idx);
+        if(idx == 0 || idx == size*(-1))
+        {
+            if(size == 1)
+            {
+                free(head);
+                head = nullptr;
+                tail = nullptr;
+                size--;
+                return true;
+            }
+            head = head->next;
+            free(head->prev);
+            head->prev = nullptr;
+            size--;
+            return true;
+        }
+        else if(idx == size-1 || idx == -1)
+        {
+            tail = tail->prev;
+            free(tail->next);
+            tail->next = nullptr;
+            size--;
+            return true;
+        }
+        else
+        {
+            rem->next->prev = rem->prev;
+            rem->prev->next = rem->next;
+            free(rem);
+            size--;
+            return true;
+        }
+    }
+    void remove_first()
+    {
+        remove_at(0);
+    }
+
+    void remove_last()
+    {
+        remove_at(-1);
+    }
+
+    bool remove(T val)
     {
         NodeIndexPair *rem = this->find_pair(val);
         int idx = rem->idx;
-
-        if(idx == 0)
+        if(idx == 0 || idx == size*(-1))
         {
+            if(size == 1)
+            {
+                free(head);
+                head = nullptr;
+                tail = nullptr;
+                size--;
+                return true;
+            }
             head = head->next;
-            if(size > 1)
-            {
-                head->prev = nullptr;
-            } 
+            free(head->prev);
+            head->prev = nullptr;
             size--;
-            return;
+            return true;
         }
-        else if(idx == size-1)
+        else if(idx == size-1 || idx == -1)
         {
-            
             tail = tail->prev;
-            if(size > 1)
-            {
-                tail->next = nullptr;
-            } 
+            free(tail->next);
+            tail->next = nullptr;
             size--;
-            return;
+            return true;
+        }
+        else
+        {
+            Node* node =rem->node;
+            node->next->prev = node->prev;
+            node->prev->next = node->next;
+            free(node);
+            size--;
+            return true;
         }
     }
 
@@ -270,6 +329,23 @@ public:
         size++;
     }
 
+    void add_all(LinkedList<T>* vals)
+    {
+        Node* base = vals->head;
+        while(base != nullptr)
+        {
+            add(base->val);
+        }
+    }
+
+    void add_all(initializer_list<T> vals)
+    {
+        for (T val : vals)
+        {
+            this->add(val);
+        }
+    }
+
     T get(int idx)
     {
         Node *base; 
@@ -299,10 +375,51 @@ public:
         return true;
     }
 
+    bool contains(T val)
+    {
+        NodeIndexPair *node = find_pair(val);
+        if(node->node == nullptr)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    bool is_empty()
+    {
+        return size == 0;
+    }
+
     uint32_t get_size()
     {
-        return size;
+        return this->size;
     }
+
+    T* data()
+    {
+        T* arr = (T*) malloc(size * sizeof(T));
+        Node* base = head;
+        for(int i = 0; i<size; i++)
+        {
+            arr[i] = base->val;
+            base = base->next;
+        }
+        return arr;
+    }
+
+    std::vector<T>* to_vector()
+    {
+        vector<T>* vec = new vector<int>(size);
+        Node* base = head;
+        for(int i = 0; i<size; i++)
+        {
+            (*vec)[i] = base->val;
+            base = base->next;
+        }
+        return vec;
+    }
+
     string to_string()
     {
         if (size == 0)
@@ -311,7 +428,7 @@ public:
         }
         string str = "[";
         Node *node = head;
-        while (true)
+        while (node != nullptr)
         {
             // only works for int, long, char etc.
             str.append(std::to_string(node->val));
@@ -328,13 +445,57 @@ public:
         str.append("]");
         return str;
     }
+    
+    private: 
+
+    class Iterator
+    {
+        Node* curr;
+        
+        public :
+        T get()
+        {
+            T val = curr->val;
+            curr = curr->next;
+            return val;
+        }
+        bool has_next()
+        {
+            return curr != nullptr;
+        }
+        Iterator(Node* head) {curr = head;}
+    };
+
+    Iterator iterator = Iterator(head);
+    
+    public: 
+
+    void set_iterator()
+    {
+        iterator = Iterator(head);
+    }
+    bool has_next()
+    {
+        return iterator.has_next();
+    }
+
+
+    T next()
+    {
+        return iterator.get();
+    }
 };
 
 int main(int argc, char const *argv[])
 {
 
     LinkedList<int> *i_nums = new LinkedList<int>({1, 2, 3, 4});
-    i_nums->add(9, -1);
-    cout << i_nums->to_string() << endl;
-    return 0;
+    i_nums->add(9);
+    
+    i_nums->set_iterator();
+    while(i_nums->has_next())
+    {
+        int a = i_nums->next();
+        cout << a << endl;
+    }
 }
